@@ -41,7 +41,7 @@ export async function POST(req){
     const openai = new OpenAI(process.env.OPENAI_API_KEY)
     
     const text = data[data.length - 1].content
-    const embedding = await openai.Embeddings.create({
+    const embedding = await openai.embeddings.create({
         model: 'text-embedding-3-small',
         input: text,
         encoding_format: 'float',
@@ -67,7 +67,7 @@ export async function POST(req){
     const lastMessage = data[data.length - 1]
     const lastMessageContent = lastMessage.content + resultString
     const lastDataWithoutLastMessage = data.slice(0, data.length - 1)
-    const completion = await openai.Completions.create({
+    const completion = await openai.chat.completions.create({
         messages: [
             {role: 'system', content: systemPrompt},
             ...lastDataWithoutLastMessage,
@@ -79,13 +79,13 @@ export async function POST(req){
 
     const stream = new ReadableStream({
         async start(controller){
-            const enoder = new TextEncoder()
+            const encoder = new TextEncoder()
             try{
                 for await (const chunk of completion){
                     const content = chunk.choices[0]?.delta?.content
                     if (content){
                         const text = encoder.encode(content)
-                        controller.encode(text)
+                        controller.enqueue(text)
                     }
                 }
             }
